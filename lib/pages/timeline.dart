@@ -1,4 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttershare/widgets/header.dart';
+import 'package:fluttershare/widgets/progress.dart';
+
+final userRef = Firestore.instance.collection('users');
 
 class Timeline extends StatefulWidget {
   @override
@@ -8,6 +13,9 @@ class Timeline extends StatefulWidget {
 class _TimelineState extends State<Timeline> {
   @override
   Widget build(context) {
-    return Text("Timeline");
+    return Scaffold(
+      appBar: header(context, isAppTitle: true),
+      body: Text('hogehoge'),
+    );
   }
 }

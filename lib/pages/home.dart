@@ -1,8 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttershare/pages/activity_feed.dart';
+import 'package:fluttershare/pages/create_account.dart';
+import 'package:fluttershare/pages/profile.dart';
+import 'package:fluttershare/pages/search.dart';
+import 'package:fluttershare/pages/timeline.dart';
+import 'package:fluttershare/pages/upload.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
+final usersRef = Firestore.instance.collection('users');
+final DateTime timestamp = DateTime.now();
 
 class Home extends StatefulWidget {
   @override
@@ -11,10 +20,13 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   bool isAuth = false;
+  PageController _pageController;
+  int _pageIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     googleSignIn.onCurrentUserChanged.listen((account) {
       handleSignIn(account);
     }, onError: (err) {
@@ -28,9 +40,15 @@ class _HomeState extends State<Home> {
     });
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _pageController.dispose();
+  }
+
   handleSignIn(GoogleSignInAccount account) {
     if (account != null) {
-      print(account);
+      _createUserInFirebase();
       setState(() {
         isAuth = true;
       });
@@ -41,6 +59,29 @@ class _HomeState extends State<Home> {
     }
   }
 
+  _createUserInFirebase() async {
+    // check if user exists in users collection in database according to their id
+    final GoogleSignInAccount user = googleSignIn.currentUser;
+    final DocumentSnapshot doc = await userRef.document(user.id).get();
+    if (!doc.exists) {
+      final userName = await Navigator.push(
+          context, MaterialPageRoute(builder: (_) => CreateAccount()));
+      usersRef.document(user.id).setData(
+        {
+          'id': user.id,
+          'userName': userName,
+          'photoUrl': user.photoUrl,
+          'email': user.email,
+          'displayName': user.displayName,
+          'bio': '',
+          'timestamp': timestamp,
+        },
+      );
+    }
+
+    // if the user doesnt
+  }
+
   login() {
     googleSignIn.signIn();
   }
@@ -49,10 +90,50 @@ class _HomeState extends State<Home> {
     googleSignIn.signOut();
   }
 
+  _onPageChanged(int pageIndex) {
+    setState(() {
+      _pageIndex = pageIndex;
+    });
+  }
+
+  _onTap(int pageIndex) {
+    _pageController.animateToPage(
+      pageIndex,
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   Widget buildAuthScreen() {
-    return RaisedButton(
-      child: Text('Logout'),
-      onPressed: logout,
+    return Scaffold(
+      body: PageView(
+        children: <Widget>[
+          Timeline(),
+          ActivityFeed(),
+          Upload(),
+          Search(),
+          Profile(),
+        ],
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        physics: NeverScrollableScrollPhysics(),
+      ),
+      bottomNavigationBar: CupertinoTabBar(
+        currentIndex: _pageIndex,
+        onTap: _onTap,
+        activeColor: Theme.of(context).primaryColor,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.whatshot)),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_active)),
+          BottomNavigationBarItem(
+              icon: Icon(
+            Icons.photo_camera,
+            size: 35.0,
+          )),
+          BottomNavigationBarItem(icon: Icon(Icons.search)),
+          BottomNavigationBarItem(icon: Icon(Icons.account_circle)),
+        ],
+      ),
     );
   }
 
