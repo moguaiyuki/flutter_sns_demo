@@ -5,6 +5,8 @@ import 'package:fluttershare/pages/home.dart';
 import 'package:fluttershare/widgets/header.dart';
 import 'package:fluttershare/widgets/progress.dart';
 
+import 'edit_profile.dart';
+
 class Profile extends StatefulWidget {
   final String profileId;
 
@@ -15,6 +17,8 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  final String currentUserId = currentUser?.id;
+
   Column buildCountColumn(String label, int count) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -39,8 +43,50 @@ class _ProfileState extends State<Profile> {
     );
   }
 
+  _editProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfile(
+          currentUserId: currentUserId,
+        ),
+      ),
+    );
+  }
+
+  _buildButton({String title, Function onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.only(top: 5.0),
+        child: Container(
+          width: 250.0,
+          height: 27.0,
+          child: Text(
+            title,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            border: Border.all(color: Colors.blue),
+            borderRadius: BorderRadius.circular(5.0),
+          ),
+        ),
+      ),
+    );
+  }
+
   buildProfileButton() {
-    return Text("profile button");
+    if (currentUserId == widget.profileId) {
+      return _buildButton(
+        title: 'Edit Profile',
+        onTap: _editProfile,
+      );
+    }
   }
 
   buildProfileHeader() {
