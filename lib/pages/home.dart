@@ -15,6 +15,8 @@ final GoogleSignIn googleSignIn = GoogleSignIn();
 final StorageReference storageRef = FirebaseStorage.instance.ref();
 final usersRef = Firestore.instance.collection('users');
 final postsRef = Firestore.instance.collection('posts');
+final commentsRef = Firestore.instance.collection('comments');
+final activityFeedsRef = Firestore.instance.collection('feeds');
 final DateTime timestamp = DateTime.now();
 User currentUser;
 
@@ -149,10 +151,6 @@ class _HomeState extends State<Home> {
             BottomNavigationBarItem(icon: Icon(Icons.account_circle)),
           ]),
     );
-    // return RaisedButton(
-    //   child: Text('Logout'),
-    //   onPressed: logout,
-    // );
   }
 
   Scaffold buildUnAuthScreen() {
