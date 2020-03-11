@@ -119,12 +119,87 @@ class _PostState extends State<Post> {
               ),
             ),
             subtitle: Text(location),
-            trailing: IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.more_vert),
-            ),
+            trailing: currentUserId == ownerId
+                ? IconButton(
+                    onPressed: () => _handleDeletePost(context),
+                    icon: Icon(Icons.more_vert),
+                  )
+                : Text(''),
           );
         });
+  }
+
+  _handleDeletePost(BuildContext parentContext) {
+    return showDialog(
+        context: parentContext,
+        builder: (context) {
+          return SimpleDialog(
+            title: Text("Remove this post?"),
+            children: <Widget>[
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deletePost();
+                },
+                child: Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.red),
+                ),
+              )
+            ],
+          );
+        });
+  }
+
+  _deletePost() {
+    postsRef
+        .document(ownerId)
+        .collection('userPosts')
+        .document(postId)
+        .get()
+        .then((doc) {
+      if (doc.exists) {
+        doc.reference.delete();
+      }
+    });
+
+    // 以下は全然Cloud functions でやれば？という感じではある
+
+    storageRef.child("post_$postId.jpg").delete();
+
+    activityFeedsRef
+        .document(ownerId)
+        .collection('feedItems')
+        .where('postId', isEqualTo: postId)
+        .getDocuments()
+        .then((snapshot) {
+      snapshot.documents.forEach((doc) {
+        if (doc.exists) {
+          doc.reference.delete();
+        }
+      });
+    });
+
+    commentsRef
+        .document(postId)
+        .collection('comments')
+        .getDocuments()
+        .then((snapshot) {
+      snapshot.documents.forEach((doc) {
+        if (doc.exists) {
+          doc.reference.delete();
+        }
+      });
+    });
+
+
   }
 
   _addLikeToActivityFeed() {
