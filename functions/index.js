@@ -63,3 +63,94 @@ exports.onDeleteFollower = functions
       }
     })
   });
+
+exports.onCreatePost = functions
+  .firestore
+  .document('/posts/{userId}/userPosts/{postId}')
+  .onCreate(async (snapshot, context) => {
+    const postCreated = snapshot.data();
+    const userId = context.params.userId;
+    const postId = context.params.postId;
+
+    const userFollowersRef = admin
+      .firestore()
+      .collection('followers')
+      .document(userId)
+      .collection('userFollowers');
+
+    const querySnapshot = await userFollowersRef.get();
+
+    querySnapshot.forEach((doc) => {
+      const followerId = doc.id;
+      admin
+        .firestore()
+        .collection('timeline')
+        .doc(followerId)
+        .collection('timelinePosts')
+        .doc(postId)
+        .set(postCreated)
+    });
+  })
+
+exports.onUpdatePost = functions
+  .firestore
+  .document('/post/{userId}/userPosts/{postId}')
+  .onUpdate(async (change, context) => {
+    const postUpdated = change.after.data();
+    const userId = context.params.userId;
+    const postId = context.params.postId;
+
+    const userFollowersRef = admin
+      .firestore()
+      .collection('followers')
+      .document(userId)
+      .collection('userFollowers');
+
+    const querySnapshot = await userFollowersRef.get();
+
+    querySnapshot.forEach((doc) => {
+      const followerId = doc.id;
+      admin
+        .firestore()
+        .collection('timeline')
+        .doc(followerId)
+        .collection('timelinePosts')
+        .doc(postId)
+        .get().then(doc => {
+          if (doc.exists) {
+            doc.ref.update(postUpdated);
+          }
+        })
+    });
+  });
+
+exports.onDeletePost = functions
+  .firestore
+  .document('/post/{userId}/userPosts/{postId}')
+  .onDelete(async (_, context) => {
+    const userId = context.params.userId;
+    const postId = context.params.postId;
+
+    const userFollowersRef = admin
+      .firestore()
+      .collection('followers')
+      .document(userId)
+      .collection('userFollowers');
+
+    const querySnapshot = await userFollowersRef.get();
+
+    querySnapshot.forEach((doc) => {
+      const followerId = doc.id;
+      admin
+        .firestore()
+        .collection('timeline')
+        .doc(followerId)
+        .collection('timelinePosts')
+        .doc(postId)
+        .get().then(doc => {
+          if (doc.exists) {
+            doc.ref.delete();
+          }
+        })
+    });
+  })
